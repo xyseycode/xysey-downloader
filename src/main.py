@@ -1,5 +1,6 @@
 import subprocess
 import time
+from turtle import down
 
 from aria2.client import Aria2Client
 
@@ -78,20 +79,13 @@ def main():
 
         # Monitor the download
         while True:
-            status = client.get_status(gid)
-
-            state = status["status"]
-
-            total = int(status.get("totalLength", 0))
-            completed = int(status.get("completedLength", 0))
-            speed = int(status.get("downloadSpeed", 0))
-
-            filename = status.get("filename", "Unknown")
-
-            if total > 0:
-                percentage = completed / total * 100
-            else:
-                percentage = 0
+            download = client.get_status(gid)
+            state = download.status
+            percentage = download.progress
+            total = download.total_size
+            completed = download.completed_size
+            speed = download.speed
+            filename = download.filename
 
             print(
                 f"\r"

@@ -1,6 +1,8 @@
 import json
 import urllib.request
 
+from downloads.models import Download
+
 
 class Aria2Client:
     def __init__(self, rpc_url="http://127.0.0.1:6800/jsonrpc"):
@@ -59,4 +61,14 @@ class Aria2Client:
             ],
         )
 
-        return response["result"]
+        data = response["result"]
+
+        return Download(
+            gid=gid,
+            filename=data.get("filename", "Unknown"),
+            status=data.get("status", "unknown"),
+            total_size=int(data.get("totalLength", 0)),
+            completed_size=int(data.get("completedLength", 0)),
+            speed=int(data.get("downloadSpeed", 0)),
+            eta=data.get("eta", "N/A"),
+        )
