@@ -14,7 +14,9 @@ def start_aria2():
             "--enable-rpc",
             "--rpc-listen-all=false",
             "--rpc-listen-port=6800",
-        ]
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
     return process
@@ -65,57 +67,60 @@ def main():
         # wait until aria2 is ready
         wait_for_aria2(client)
 
-        # ask the user for a url
-        url = input("\nEnter download URL: ").strip()
-
-        if not url:
-            print("No URL provided.")
-            return
-
-        # Tell aria2 to download it
-        download = manager.add(url)
-
-        print("\nDownload started!")
-        print(f"GID: {download.gid}\n")
-
-        # Monitor the download
         while True:
-            download = manager.update(download.gid)
-            state = download.status
-            percentage = download.progress
-            total = download.total_size
-            completed = download.completed_size
-            speed = download.speed
-            filename = download.filename
+            print("\n")
+            print("Xysey Downloader")
+            print("================")
+            print("1. Add download")
+            print("2. List downloads")
+            print("3. Exit")
 
-            print(
-                f"\r"
-                f"{filename} | "
-                f"{percentage:6.2f}% | "
-                f"{format_bytes(completed)} / "
-                f"{format_bytes(total)} | "
-                f"{format_bytes(speed)}/s",
-                end="",
-                flush=True,
-            )
+            choice = input("\nChoose an option: ").strip()
 
-            if state == "complete":
-                print("\n\nDownload complete!")
+            if choice == "1":
+                url = input("\nEnter download URL: ").strip()
+
+                if not url:
+                    print("No URL provided.")
+                    continue
+                if not url.startswith(("http://", "https://", "ftp://")):
+                    print("Invalid URL.")
+                    continue
+
+                download = manager.add(url)
+
+                print("\nDownload added!")
+                print(f"GID: {download.gid}")
+
+            elif choice == "2":
+                downloads = manager.all()
+
+                if not downloads:
+                    print("\nNo downloads.")
+                    continue
+
+                print("\nDownloads")
+                print("---------")
+
+                for download in downloads:
+                    download = manager.update(download.gid)
+
+                    print(
+                        f"{download.filename} | "
+                        f"{download.progress:.2f}% | "
+                        f"{format_bytes(download.speed)}/s | "
+                        f"{download.status}"
+                    )
+
+            elif choice == "3":
+                print("\nExiting...")
                 break
 
-            if state == "error":
-                print("\n\nDownload failed!")
-                break
-
-            if state == "removed":
-                print("\n\nDownload removed!")
-                break
-
-            time.sleep(0.5)
+            else:
+                print("\nInvalid option.")
 
     finally:
         print("\nStopping aria2...")
-
         aria2_process.terminate()
         aria2_process.wait()
 

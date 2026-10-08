@@ -1,5 +1,6 @@
 import json
 import urllib.request
+import os
 
 from downloads.models import Download
 
@@ -56,16 +57,21 @@ class Aria2Client:
                     "completedLength",
                     "downloadSpeed",
                     "eta",
-                    "filename",
+                    "files",
                 ],
             ],
         )
 
         data = response["result"]
+        files = data.get("files", [])
+        if files:
+            filename = os.path.basename(files[0]["path"])
+        else:
+            filename = "Unknown"
 
         return Download(
             gid=gid,
-            filename=data.get("filename", "Unknown"),
+            filename=filename,
             status=data.get("status", "unknown"),
             total_size=int(data.get("totalLength", 0)),
             completed_size=int(data.get("completedLength", 0)),
