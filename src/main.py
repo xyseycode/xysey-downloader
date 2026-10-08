@@ -1,8 +1,8 @@
 import subprocess
 import time
-from turtle import down
 
 from aria2.client import Aria2Client
+from downloads.manager import DownloadManager
 
 
 def start_aria2():
@@ -28,7 +28,7 @@ def wait_for_aria2(client):
     for _ in range(20):
         try:
             client.get_version()
-            print("aria2 RPC is read!")
+            print("aria2 RPC is ready!")
             return
 
         except Exception:
@@ -56,6 +56,7 @@ def main():
 
     # Create our aria2 client
     client = Aria2Client()
+    manager = DownloadManager(client)
 
     # start aria2
     aria2_process = start_aria2()
@@ -72,14 +73,14 @@ def main():
             return
 
         # Tell aria2 to download it
-        gid = client.add_download(url)
+        download = manager.add(url)
 
         print("\nDownload started!")
-        print(f"GID: {gid}\n")
+        print(f"GID: {download.gid}\n")
 
         # Monitor the download
         while True:
-            download = client.get_status(gid)
+            download = manager.update(download.gid)
             state = download.status
             percentage = download.progress
             total = download.total_size
