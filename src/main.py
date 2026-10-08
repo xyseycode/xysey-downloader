@@ -1,38 +1,11 @@
-import json
 import subprocess
 import time
-import urllib.request
 
-
-RPC_URL = "http://127.0.0.1:6800/jsonrpc"
-
-
-def rpc_call(method, params=None):
-    """Send a JSON-RPC request to aria2."""
-
-    request_data = {
-        "jsonrpc": "2.0",
-        "id": "my-downloader",
-        "method": method,
-        "params": params or [],
-    }
-
-    data = json.dumps(request_data).encode("utf-8")
-
-    request = urllib.request.Request(
-        RPC_URL,
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-        },
-    )
-
-    with urllib.request.urlopen(request) as response:
-        return json.loads(response.read().decode("utf-8"))
+from aria2.client import Aria2Client
 
 
 def start_aria2():
-    """Start aria2 with its RPC server enabled."""
+    """Start the aria2 RPC server."""
 
     process = subprocess.Popen(
         [
@@ -40,72 +13,33 @@ def start_aria2():
             "--enable-rpc",
             "--rpc-listen-all=false",
             "--rpc-listen-port=6800",
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        ]
     )
 
     return process
 
 
-def wait_for_aria2():
+def wait_for_aria2(client):
     """Wait until aria2's RPC server is ready."""
 
-    print("Starting aria2...")
+    print("Starting aria2....")
 
     for _ in range(20):
         try:
-            rpc_call("aria2.getVersion")
-            print("aria2 RPC is ready!")
+            client.get_version()
+            print("aria2 RPC is read!")
             return
+
         except Exception:
             time.sleep(0.25)
 
     raise RuntimeError("Could not connect to aria2 RPC.")
 
 
-def add_download(url):
-    """Tell aria2 to download a URL."""
-
-    response = rpc_call(
-        "aria2.addUri",
-        [
-            [url],
-            {
-                "dir": "downloads",
-            },
-        ],
-    )
-
-    return response["result"]
-
-
-def get_status(gid):
-    """Get the current status of a download."""
-
-    response = rpc_call(
-        "aria2.tellStatus",
-        [
-            gid,
-            [
-                "status",
-                "totalLength",
-                "completedLength",
-                "downloadSpeed",
-                "eta",
-                "filename",
-            ],
-        ],
-    )
-
-    return response["result"]
-
-
 def format_bytes(value):
     """Convert bytes into a human-readable string."""
 
     value = float(value)
-
     units = ["B", "KB", "MB", "GB", "TB"]
 
     for unit in units:
@@ -119,30 +53,32 @@ def format_bytes(value):
 
 def main():
 
-    # Start aria2
+    # Create our aria2 client
+    client = Aria2Client()
+
+    # start aria2
     aria2_process = start_aria2()
 
     try:
-        # Wait until RPC is available
-        wait_for_aria2()
+        # wait until aria2 is ready
+        wait_for_aria2(client)
 
-        # URL to download
+        # ask the user for a url
         url = input("\nEnter download URL: ").strip()
 
         if not url:
             print("No URL provided.")
             return
 
-        # Add download
-        gid = add_download(url)
+        # Tell aria2 to download it
+        gid = client.add_download(url)
 
-        print(f"\nDownload started!")
+        print("\nDownload started!")
         print(f"GID: {gid}\n")
 
-        # Monitor download
+        # Monitor the download
         while True:
-
-            status = get_status(gid)
+            status = client.get_status(gid)
 
             state = status["status"]
 
@@ -173,11 +109,11 @@ def main():
                 break
 
             if state == "error":
-                print("\n\nDownload failed.")
+                print("\n\nDownload failed!")
                 break
 
             if state == "removed":
-                print("\n\nDownload removed.")
+                print("\n\nDownload removed!")
                 break
 
             time.sleep(0.5)
