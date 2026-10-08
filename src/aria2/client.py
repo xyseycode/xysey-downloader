@@ -1,6 +1,6 @@
 import json
-import urllib.request
 import os
+import urllib.request
 
 from downloads.models import Download
 
@@ -78,3 +78,19 @@ class Aria2Client:
             speed=int(data.get("downloadSpeed", 0)),
             eta=data.get("eta", "N/A"),
         )
+
+    def pause(self, gid):
+        response = self._rpc_call(
+            "aria2.pause",
+            [gid],
+        )
+
+        return response["result"]
+
+    def resume(self, gid):
+        response = self._rpc_call(
+            "aria2.unpause",
+            [gid]
+        )
+
+        return response["result"]

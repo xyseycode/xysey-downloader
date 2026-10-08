@@ -73,7 +73,9 @@ def main():
             print("================")
             print("1. Add download")
             print("2. List downloads")
-            print("3. Exit")
+            print("3. Pause Download")
+            print("4. Resume Download")
+            print("5. Exit")
 
             choice = input("\nChoose an option: ").strip()
 
@@ -98,21 +100,78 @@ def main():
                 if not downloads:
                     print("\nNo downloads.")
                     continue
-
-                print("\nDownloads")
-                print("---------")
+                # downloads table ui
+                rows = []
 
                 for download in downloads:
                     download = manager.update(download.gid)
 
+                    rows.append(
+                        [
+                            download.gid,
+                            download.filename,
+                            f"{download.progress:.2f}%",
+                            f"{format_bytes(download.speed)}/s",
+                            download.status,
+                        ]
+                    )
+
+                headers = [
+                    "GID",
+                    "File",
+                    "Progress",
+                    "Speed",
+                    "Status",
+                ]
+
+                column_widths = []
+
+                for column in zip(headers, *rows):
+                    width = max(len(str(value)) for value in column)
+                    column_widths.append(width)
+
+                header = " ".join(
+                    f"{header:<{width}}"
+                    for header, width in zip(headers, column_widths)
+                )
+
+                print("\nDownloads")
+                print("---------")
+                print(header)
+                print("-" * len(header))
+
+                for row in rows:
                     print(
-                        f"{download.filename} | "
-                        f"{download.progress:.2f}% | "
-                        f"{format_bytes(download.speed)}/s | "
-                        f"{download.status}"
+                        " ".join(
+                            f"{value:<{width}}"
+                            for value, width in zip(row, column_widths)
+                        )
                     )
 
             elif choice == "3":
+                gid = input("\nEnter GID to pause: ").strip()
+
+                download = manager.get(gid)
+
+                if not download:
+                    print("\nDownload not found.")
+                    continue
+
+                manager.pause(gid)
+                print("\nDownload paused.")
+
+            elif choice == "4":
+                gid = input("\nEnter GID to resume: ").strip()
+                download = manager.get(gid)
+
+                if not download:
+                    print("\nDownload not found.")
+                    continue
+
+                manager.resume(gid)
+                print("\nDownload resumed.")
+
+            elif choice == "5":
                 print("\nExiting...")
                 break
 

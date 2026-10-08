@@ -33,3 +33,9 @@ class DownloadManager:
 
     def all(self):
         return list(self.downloads.values())
+
+    def pause(self, gid):
+        self.client.pause(gid)
+
+    def resume(self, gid):
+        self.client.resume(gid)
