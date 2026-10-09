@@ -1,5 +1,7 @@
-from random import choices
+import os
+import msvcrt
 import subprocess
+import threading
 import time
 
 from aria2.client import Aria2Client
@@ -54,6 +56,86 @@ def format_bytes(value):
 
     return f"{value:.2f} PB"
 
+def print_downloads(manager):
+    downloads = manager.all()
+
+    if not downloads:
+        print("\nNo downloads.")
+        return
+    # downloads table ui
+    rows = []
+
+    for download in downloads:
+        download = manager.update(download.gid)
+
+        rows.append(
+            [
+                download.gid,
+                download.filename,
+                f"{download.progress:.2f}%",
+                f"{format_bytes(download.speed)}/s",
+                download.status,
+            ]
+        )
+
+    headers = [
+        "GID",
+        "File",
+        "Progress",
+        "Speed",
+        "Status",
+    ]
+
+    column_widths = []
+
+    for column in zip(headers, *rows):
+        width = max(len(str(value)) for value in column)
+        column_widths.append(width)
+
+    header = " ".join(
+        f"{header:<{width}}"
+        for header, width in zip(headers, column_widths)
+    )
+
+    print("\nDownloads")
+    print("---------")
+    print(header)
+    print("-" * len(header))
+
+    for row in rows:
+        print(
+            " ".join(
+                f"{value:<{width}}"
+                for value, width in zip(row, column_widths)
+            )
+        )
+
+def monitor_downloads(manager, stop_event):
+    while not stop_event.is_set():
+        print_downloads(manager)
+        time.sleep(1)
+
+def watch_downloads(manager):
+    while True:
+        os.system("cls")
+        print("Xysey Downloader - Live Monitor")
+        print("===============================")
+        print("Press Q to return to the menu.\n")
+
+        print_downloads(manager)
+
+        start_time = time.monotonic()
+
+        while time.monotonic() - start_time < 1:
+            if msvcrt.kbhit():
+                key = msvcrt.getwch()
+
+                if key.lower() == "q":
+                    return
+
+            time.sleep(0.05)
+
+
 
 def main():
 
@@ -78,6 +160,7 @@ def main():
             print("4. Resume Download")
             print("5. Remove Download")
             print("6. Exit")
+            print("7. Watch downloads live")
 
             choice = input("\nChoose an option: ").strip()
 
@@ -97,58 +180,7 @@ def main():
                 print(f"GID: {download.gid}")
 
             elif choice == "2":
-                downloads = manager.all()
-
-                if not downloads:
-                    print("\nNo downloads.")
-                    continue
-                # downloads table ui
-                rows = []
-
-                for download in downloads:
-                    download = manager.update(download.gid)
-
-                    rows.append(
-                        [
-                            download.gid,
-                            download.filename,
-                            f"{download.progress:.2f}%",
-                            f"{format_bytes(download.speed)}/s",
-                            download.status,
-                        ]
-                    )
-
-                headers = [
-                    "GID",
-                    "File",
-                    "Progress",
-                    "Speed",
-                    "Status",
-                ]
-
-                column_widths = []
-
-                for column in zip(headers, *rows):
-                    width = max(len(str(value)) for value in column)
-                    column_widths.append(width)
-
-                header = " ".join(
-                    f"{header:<{width}}"
-                    for header, width in zip(headers, column_widths)
-                )
-
-                print("\nDownloads")
-                print("---------")
-                print(header)
-                print("-" * len(header))
-
-                for row in rows:
-                    print(
-                        " ".join(
-                            f"{value:<{width}}"
-                            for value, width in zip(row, column_widths)
-                        )
-                    )
+                print_downloads(manager)
 
             elif choice == "3":
                 gid = input("\nEnter GID to pause: ").strip()
@@ -188,6 +220,9 @@ def main():
             elif choice == "6":
                 print("\nExiting...")
                 break
+
+            elif choice == "7":
+                watch_downloads(manager)
 
             else:
                 print("\nInvalid option.")
