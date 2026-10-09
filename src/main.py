@@ -4,12 +4,18 @@ import subprocess
 import threading
 import time
 
+from pathlib import Path
 from aria2.client import Aria2Client
 from downloads.manager import DownloadManager
 
 
+
 def start_aria2():
-    """Start the aria2 RPC server."""
+    """Start the aria2 RPC server with session recovery."""
+
+    project_root = Path(__file__).resolve().parents[1]
+    session_file = project_root / "aria2.session"
+    session_file.touch(exist_ok=True)
 
     process = subprocess.Popen(
         [
@@ -17,6 +23,10 @@ def start_aria2():
             "--enable-rpc",
             "--rpc-listen-all=false",
             "--rpc-listen-port=6800",
+            "--save-session=" + str(session_file),
+            "--save-session-interval=30",
+            "--auto-save-interval=5",
+            "--input-file=" + str(session_file),
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -228,9 +238,28 @@ def main():
                 print("\nInvalid option.")
 
     finally:
+        print("\nSaving download session...")
+
+        try:
+            client._rpc_call("aria2.saveSession")
+            print("Download session saved.")
+
+        except Exception as error:
+            print(f"Could not save session: {error}")
+
         print("\nStopping aria2...")
-        aria2_process.terminate()
-        aria2_process.wait()
+
+        try:
+            client._rpc_call("aria2.shutdown")
+            aria2_process.wait(timeout=10)
+            print("aria2 stopped gracefully.")
+
+        except Exception as error:
+            print(f"Graceful shutdown failed: {error}")
+
+            if aria2_process.poll() is None:
+                aria2_process.terminate()
+                aria2_process.wait()
 
 
 if __name__ == "__main__":
