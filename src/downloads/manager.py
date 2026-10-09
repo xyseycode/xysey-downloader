@@ -39,3 +39,7 @@ class DownloadManager:
 
     def resume(self, gid):
         self.client.resume(gid)
+
+    def remove(self, gid):
+        self.client.remove(gid)
+        self.downloads.pop(gid, None)

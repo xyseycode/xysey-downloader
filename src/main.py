@@ -1,3 +1,4 @@
+from random import choices
 import subprocess
 import time
 
@@ -75,7 +76,8 @@ def main():
             print("2. List downloads")
             print("3. Pause Download")
             print("4. Resume Download")
-            print("5. Exit")
+            print("5. Remove Download")
+            print("6. Exit")
 
             choice = input("\nChoose an option: ").strip()
 
@@ -172,6 +174,18 @@ def main():
                 print("\nDownload resumed.")
 
             elif choice == "5":
+                gid = input("\nEnter GID to remove: ").strip()
+                download = manager.get(gid)
+
+                if not download:
+                    print("\nDownload not found.")
+                    continue
+
+                manager.remove(gid)
+                print("\nDownload removed.")
+
+
+            elif choice == "6":
                 print("\nExiting...")
                 break
 

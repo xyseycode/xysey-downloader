@@ -94,3 +94,11 @@ class Aria2Client:
         )
 
         return response["result"]
+
+    def remove(self, gid):
+        response = self._rpc_call(
+            "aria2.remove",
+            [gid],
+        )
+
+        return response["result"]
