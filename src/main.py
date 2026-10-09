@@ -142,7 +142,7 @@ def main():
     # Create our aria2 client
     client = Aria2Client()
     manager = DownloadManager(client)
-
+    manager.load_history()
     # start aria2
     aria2_process = start_aria2()
 

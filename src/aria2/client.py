@@ -1,8 +1,12 @@
 import json
 import os
 import urllib.request
+import urllib.error
 
 from downloads.models import Download
+
+class DownloaderNotFoundError(Exception):
+    """Raised when a download GID does not exist in aria2."""
 
 
 class Aria2Client:
@@ -27,8 +31,28 @@ class Aria2Client:
             },
         )
 
-        with urllib.request.urlopen(request) as response:
-            return json.loads(response.read().decode("utf-8"))
+        try:
+            with urllib.request.urlopen(request) as response:
+                response_data = response.read()
+        except urllib.error.HTTPError as error:
+            response_data = error.read()
+
+        response_data = json.loads(response_data.decode("utf-8"))
+
+        if "error" in response_data:
+            error = response_data["error"]
+            code = error.get("code")
+            message = error.get("message", "Unknown error")
+
+            if code == 1 and ("Invalid GID" in message or "is not found" in message):
+                raise DownloaderNotFoundError(message)
+
+            raise RuntimeError(
+                f"aria2 RPC error {code}: {message}"
+            )
+
+        return response_data
+
 
     def get_version(self):
         return self._rpc_call("aria2.getVersion")
