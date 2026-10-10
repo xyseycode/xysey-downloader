@@ -18,17 +18,17 @@ class DownloadManager:
         data = []
 
         for download in self.downloads.values():
-            data.append(
-                {
-                    "gid": download.gid,
-                    "filename": download.filename,
-                    "status": download.status,
-                    "total_size": download.total_size,
-                    "completed_size": download.completed_size,
-                    "speed": download.speed,
-                    "eta": download.eta,
-                }
-            )
+            data.append({
+                "gid": download.gid,
+                "filename": download.filename,
+                "status": download.status,
+                "total_size": download.total_size,
+                "completed_size": download.completed_size,
+                "speed": download.speed,
+                "eta": download.eta,
+                "error_code": download.error_code,
+                "error_message": download.error_message,
+            })
 
         with self.history_file.open("w", encoding="utf-8") as file:
             json.dump(data, file, indent=4)
@@ -100,6 +100,8 @@ class DownloadManager:
                 completed_size=item.get("completed_size", 0),
                 speed=item.get("speed", 0),
                 eta=item.get("eta", "N/A"),
+                error_code=item.get("error_code", "0"),
+                error_message=item.get("error_message", ""),
             )
 
             self.downloads[download.gid] = download

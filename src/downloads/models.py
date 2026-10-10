@@ -11,6 +11,8 @@ class Download:
     completed_size: int = 0
     speed: int = 0
     eta: str = "N/A"
+    error_code: str = "0"
+    error_message: str = ""
 
     @property
     def progress(self):

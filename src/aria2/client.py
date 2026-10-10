@@ -1,9 +1,10 @@
 import json
 import os
-import urllib.request
 import urllib.error
+import urllib.request
 
 from downloads.models import Download
+
 
 class DownloaderNotFoundError(Exception):
     """Raised when a download GID does not exist in aria2."""
@@ -47,12 +48,9 @@ class Aria2Client:
             if code == 1 and ("Invalid GID" in message or "is not found" in message):
                 raise DownloaderNotFoundError(message)
 
-            raise RuntimeError(
-                f"aria2 RPC error {code}: {message}"
-            )
+            raise RuntimeError(f"aria2 RPC error {code}: {message}")
 
         return response_data
-
 
     def get_version(self):
         return self._rpc_call("aria2.getVersion")
@@ -82,16 +80,20 @@ class Aria2Client:
                     "downloadSpeed",
                     "eta",
                     "files",
+                    "errorCode",
+                    "errorMessage",
                 ],
             ],
         )
 
         data = response["result"]
+
         files = data.get("files", [])
         if files:
             filename = os.path.basename(files[0]["path"])
         else:
             filename = "Unknown"
+
 
         return Download(
             gid=gid,
@@ -101,6 +103,8 @@ class Aria2Client:
             completed_size=int(data.get("completedLength", 0)),
             speed=int(data.get("downloadSpeed", 0)),
             eta=data.get("eta", "N/A"),
+            error_code=data.get("errorCode", "0"),
+            error_message=data.get("errorMessage", ""),
         )
 
     def pause(self, gid):
@@ -112,10 +116,7 @@ class Aria2Client:
         return response["result"]
 
     def resume(self, gid):
-        response = self._rpc_call(
-            "aria2.unpause",
-            [gid]
-        )
+        response = self._rpc_call("aria2.unpause", [gid])
 
         return response["result"]
 

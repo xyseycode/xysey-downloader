@@ -120,6 +120,39 @@ def print_downloads(manager):
             )
         )
 
+def view_download_details(manager):
+    gid = input("\nEnter GID to view details: ").strip()
+
+    download = manager.get(gid)
+
+    if not download:
+        print("\nDownload not found.")
+        return
+
+    # Refresh the download's latest information.
+    download = manager.update(gid)
+
+    if not download:
+        print("\nDownload not found.")
+        return
+
+    print("\nDownload Details")
+    print("================")
+    print(f"GID:           {download.gid}")
+    print(f"Filename:      {download.filename}")
+    print(f"Status:        {download.status}")
+    print(f"Progress:      {download.progress:.2f}%")
+    print(f"Total size:    {format_bytes(download.total_size)}")
+    print(f"Downloaded:    {format_bytes(download.completed_size)}")
+    print(f"Speed:         {format_bytes(download.speed)}/s")
+    print(f"ETA:           {download.eta}")
+
+    if download.error_code != "0":
+        print(f"Error code:    {download.error_code}")
+        print(f"Error message: {download.error_message}")
+
+    input("\nPress Enter to return to the menu...")
+
 def monitor_downloads(manager, stop_event):
     while not stop_event.is_set():
         print_downloads(manager)
@@ -171,6 +204,7 @@ def main():
             print("5. Remove Download")
             print("6. Exit")
             print("7. Watch downloads live")
+            print("8. View download details")
 
             choice = input("\nChoose an option: ").strip()
 
@@ -233,6 +267,9 @@ def main():
 
             elif choice == "7":
                 watch_downloads(manager)
+
+            elif choice == "8":
+                view_download_details(manager)
 
             else:
                 print("\nInvalid option.")
